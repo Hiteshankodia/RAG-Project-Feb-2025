@@ -1,0 +1,11 @@
+fastapi 
+uvicorn
+openai
+langchain-community 
+pypdf
+langchain-openai
+langchain-core
+python-multipart
+langchain_google_genai
+azure-search-documents
+azure.identity
