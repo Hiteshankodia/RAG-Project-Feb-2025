@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document RAG</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; margin: 0; padding: 2rem; color: white; }
+        .upload-box {
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            transition: background 0.3s ease;
+        }
+        .upload-box:hover { background: rgba(255, 255, 255, 0.05); }
+        .upload-box i { font-size: 3rem; margin-bottom: 1rem; color: #ffffff; }
+        .upload-box input[type="file"] { display: none; }
+        .custom-file-upload {
+            border: 2px solid #ffffff99;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .custom-file-upload:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+        }
+        .query-section {
+            margin-top: 3rem;
+        }
+        .query-section input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+            background-color: #2a2a2a;
+            color: white;
+            box-sizing: border-box;
+        }
+        .query-section input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .query-section button {
+            margin-top: 1rem;
+            padding: 0.9rem 2rem;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .query-section button:hover {
+            transform: scale(1.05);
+        }
+        .query-section button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .back-link {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(46, 204, 113, 0.2));
+            color: #e8f5e8;
+            border: 2px solid #4caf50;
+            padding: 1.5rem;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+        }
+        .success-message::before {
+            content: "✅";
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        .success-message .close-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #e8f5e8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .success-message .close-btn:hover {
+            opacity: 1;
+        }
+        .info-message {
+            background: rgba(33, 150, 243, 0.2);
+            color: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 1.5rem;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+        .info-message::before {
+            content: "ℹ️";
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.visible { display: flex; }
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        .loading-text {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide upload section when document is uploaded */
+        .upload-section.hidden {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        /* Highlight query section when document is uploaded */
+        .query-section.highlighted {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px dashed rgba(76, 175, 80, 0.5);
+            border-radius: 15px;
+            padding: 2rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { border-color: rgba(76, 175, 80, 0.5); }
+            50% { border-color: rgba(76, 175, 80, 0.8); }
+            100% { border-color: rgba(76, 175, 80, 0.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">📄 Processing your document...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('home') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+
+        <div class="header">
+            <h1>Upload & Ask</h1>
+            <p>Upload your document and ask any question. Our AI will retrieve and answer intelligently.</p>
+        </div>
+
+        <!-- Success Notification -->
+        {% if request.args.get('uploaded') == 'true' %}
+        <div class="success-message" id="successMsg">
+            <button class="close-btn" onclick="closeMessage('successMsg')">&times;</button>
+            <strong>Document uploaded successfully!</strong><br>
+            Your document has been processed and is ready for queries. Please ask a question about your document below.
+        </div>
+        {% endif %}
+
+        <!-- Info message when no document is uploaded -->
+        {% if request.args.get('uploaded') != 'true' %}
+        <div class="info-message">
+            Please upload a PDF document first, then you can ask questions about its content.
+        </div>
+        {% endif %}
+
+        <!-- Upload Form -->
+        <div class="upload-section {% if request.args.get('uploaded') == 'true' %}hidden{% endif %}">
+            <form method="POST" action="/upload_pdf" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-box">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & drop your PDF document here or</p>
+                    <label for="file-upload" class="custom-file-upload">
+                        <i class="fas fa-file-pdf"></i> Choose PDF File
+                    </label>
+                    <input id="file-upload" type="file" name="document" accept=".pdf">
+                </div>
+            </form>
+        </div>
+
+        <!-- Query Form -->
+        <div class="query-section {% if request.args.get('uploaded') == 'true' %}highlighted{% endif %}">
+            <form method="POST" action="/ask_pdf_query" id="queryForm">
+                <input type="text" name="query" placeholder="Ask something about your document..." required 
+                       {% if request.args.get('uploaded') != 'true' %}disabled{% endif %}>
+                <button type="submit" {% if request.args.get('uploaded') != 'true' %}disabled{% endif %}>
+                    <i class="fas fa-search"></i> Ask Question
+                </button>
+            </form>
+            {% if request.args.get('uploaded') != 'true' %}
+            <p style="color: rgba(255,255,255,0.6); margin-top: 1rem; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> Upload a document first to enable queries
+            </p>
+            {% endif %}
+        </div>
+
+        {% if response %}
+        <div style="margin-top: 2rem; background: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196f3; padding: 1.5rem; border-radius: 0 10px 10px 0;">
+            <h3 style="color: #64b5f6; margin-top: 0;">AI Response:</h3>
+            <p style="color: white; font-size: 1.1rem; line-height: 1.6;">{{ response | safe }}</p>
+
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const uploadBox = document.querySelector('.upload-box')
+        const fileInput = document.querySelector('#file-upload')
+        const loadingOverlay = document.getElementById('loadingOverlay')
+        const loadingText = document.querySelector('.loading-text')
+        const uploadForm = document.getElementById('uploadForm')
+        const queryForm = document.getElementById('queryForm')
+
+        // Handle upload box click
+        uploadBox?.addEventListener('click', () => {
+            fileInput.click()
+        })
+
+        // Handle file selection
+        fileInput?.addEventListener('change', (e) => {
+            const file = e.target.files[0]
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file only.')
+                    fileInput.value = ''
+                    return
+                }
+
+                // Update text and show loading overlay
+                loadingText.textContent = '📄 Processing your document...'
+                loadingOverlay.classList.add('visible')
+
+                // Submit form
+                uploadForm.submit()
+            }
+        })
+
+        // Handle drag and drop
+        uploadBox?.addEventListener('dragover', (e) => {
+            e.preventDefault()
+            uploadBox.style.background = 'rgba(255, 255, 255, 0.1)'
+        })
+
+        uploadBox?.addEventListener('dragleave', (e) => {
+            e.preventDefault()
+            uploadBox.style.background = 'transparent'
+        })
+
+        uploadBox?.addEventListener('drop', (e) => {
+            e.preventDefault()
+            uploadBox.style.background = 'transparent'
+
+            const files = e.dataTransfer.files
+            if (files.length > 0) {
+                const file = files[0]
+                if (file.type === 'application/pdf') {
+                    fileInput.files = files
+                    loadingText.textContent = '📄 Processing your document...'
+                    loadingOverlay.classList.add('visible')
+                    uploadForm.submit()
+                } else {
+                    alert('Please drop a PDF file only.')
+                }
+            }
+        })
+
+        // Handle query form submission
+        queryForm?.addEventListener('submit', (e) => {
+            loadingText.textContent = '🤖 Thinking... answering your question...'
+            loadingOverlay.classList.add('visible')
+        })
+
+        // Auto-hide success message after 10 seconds
+        window.addEventListener('DOMContentLoaded', () => {
+            const msg = document.getElementById('successMsg')
+            if (msg) {
+                setTimeout(() => {
+                    msg.style.opacity = '0'
+                    setTimeout(() => msg.style.display = 'none', 300)
+                }, 10000)
+            }
+        })
+
+        // Close message function
+        function closeMessage(id) {
+            const msg = document.getElementById(id)
+            if (msg) {
+                msg.style.opacity = '0'
+                setTimeout(() => msg.style.display = 'none', 300)
+            }
+        }
+
+        // Focus on query input when document is uploaded
+        {% if request.args.get('uploaded') == 'true' %}
+        window.addEventListener('DOMContentLoaded', () => {
+            const queryInput = document.querySelector('input[name="query"]')
+            if (queryInput) {
+                setTimeout(() => queryInput.focus(), 500)
+            }
+        })
+        {% endif %}
+</script>
+
+</body>
+</html>
