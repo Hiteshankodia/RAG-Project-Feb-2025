@@ -1,0 +1,8 @@
+fastapi 
+uvicorn 
+azure-ai-search 
+azure-ai-openai 
+PyMuPDF 
+openai 
+numpy
+langchain 
