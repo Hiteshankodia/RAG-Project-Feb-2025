@@ -1,0 +1,28 @@
+flask
+PyMuPDF 
+openai 
+numpy
+langchain 
+langchain_community
+langchain-core
+python-dotenv
+langchain_openai
+langchain_google_genai
+pypdf
+fastapi
+pydantic
+pydantic-core
+uvicorn
+
+logger
+langchain-experimental
+langchain-openai
+
+# OpenAI SDK (optional, but recommended with AzureChatOpenAI)
+openai
+pandas
+# Excel & Data handling
+
+openpyxl  # Required to read .xlsx files
+
+
