@@ -1,0 +1,12 @@
+langchain 
+google-generativeai
+python-dotenv
+PyPDF2
+faiss-cpu
+langchain_google_genai
+chromadb
+langchain_community
+pypdf
+ipywidgets
+sentence-transformers
+streamlit
