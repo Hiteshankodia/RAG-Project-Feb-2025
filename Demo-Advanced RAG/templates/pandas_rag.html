@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV RAG</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.visible {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .query-section {
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .query-section input[type="text"] {
+            width: 80%;
+            padding: 1rem;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+        }
+
+        .query-section button {
+            margin-top: 1.5rem;
+            padding: 0.9rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .query-section button:hover {
+            transform: scale(1.05);
+        }
+
+        .response-box {
+            margin-top: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            color: white;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .download-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .download-link a {
+            display: inline-block;
+            background: #4ecdc4;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .download-link a:hover {
+            transform: scale(1.05);
+        }
+
+        .preview-section {
+            margin-top: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            color: white;
+            font-size: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            overflow-x: auto;
+        }
+
+        .preview-section table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        .preview-section th, .preview-section td {
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 0.6rem;
+            text-align: left;
+        }
+
+        .preview-section th {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('home') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+
+        <div class="header" style="text-align: center;">
+            <h1>Pandas RAG Assistant</h1>
+            <p>Ask anything based on this spreadsheet. Our AI will respond intelligently.</p>
+        </div>
+
+        <!-- Download Excel Button -->
+        <div class="download-link">
+            <a href="{{ url_for('static', filename='data.xlsx') }}" download="data.xlsx">
+                <i class="fas fa-download"></i> Download Excel (data.xlsx)
+            </a>
+        </div>
+
+        <!-- Query Form -->
+        <form method="POST" action="{{ url_for('pandas_rag') }}" class="query-section">
+            <input type="text" name="text" placeholder="Type your question here..." required>
+            <br>
+            <button type="submit"><i class="fas fa-search"></i> Ask</button>
+        </form>
+
+        <!-- Preview Table -->
+        {% if preview_table %}
+        <div class="preview-section">
+            <strong>Preview (First 5 Records):</strong><br><br>
+            {{ preview_table | safe }}
+        </div>
+        {% endif %}
+
+        <!-- Answer Output -->
+        {% if markdown %}
+        <div class="response-box">
+            <strong>Answer:</strong><br><br>
+            {{ markdown | safe }}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const loadingOverlay = document.createElement("div")
+        loadingOverlay.className = "loading-overlay"
+        loadingOverlay.innerHTML = `
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <div class="loading-text">🤖 Thinking... answering your question...</div>
+            </div>
+        `
+        document.body.appendChild(loadingOverlay)
+
+        const form = document.querySelector('form')
+        form?.addEventListener('submit', () => {
+            loadingOverlay.classList.add("visible")
+        })
+    </script>
+
+</body>
+</html>
